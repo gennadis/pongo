@@ -34,6 +34,16 @@ func (b *Ball) UpdatePosition() {
 	b.Y += b.YVelo
 }
 
+func (b *Ball) Bounce(maxWidth int, maxHeight int) {
+	if b.X <= 0 || b.X >= maxWidth {
+		b.XVelo *= -1
+	}
+
+	if b.Y <= 0 || b.Y >= maxHeight {
+		b.YVelo *= -1
+	}
+}
+
 type Game struct {
 	Screen tcell.Screen
 	Ball   Ball
@@ -54,6 +64,10 @@ func (g *Game) Run() {
 		g.Screen.Clear()
 		g.Ball.UpdatePosition()
 		g.Screen.SetContent(g.Ball.X, g.Ball.Y, g.Ball.Rune, nil, style)
+
+		maxWidth, maxHeight := g.Screen.Size()
+		g.Ball.Bounce(maxWidth, maxHeight)
+
 		time.Sleep(40 * time.Millisecond)
 		g.Screen.Show()
 	}
