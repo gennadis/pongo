@@ -9,18 +9,29 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+const ballEmoji = '🟢'
+
 type Ball struct {
-	Rune rune
-	X    int
-	Y    int
+	Rune  rune
+	X     int
+	Y     int
+	XVelo int
+	YVelo int
 }
 
 func NewBall() *Ball {
 	return &Ball{
-		Rune: '🟢',
-		X:    1,
-		Y:    1,
+		Rune:  ballEmoji,
+		X:     1,
+		Y:     1,
+		XVelo: 1,
+		YVelo: 1,
 	}
+}
+
+func (b *Ball) UpdatePosition() {
+	b.X += b.XVelo
+	b.Y += b.YVelo
 }
 
 type Game struct {
@@ -39,13 +50,12 @@ func (g *Game) Run() {
 	style := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
 	g.Screen.SetStyle(style)
 
-	x := 0
 	for {
 		g.Screen.Clear()
-		g.Screen.SetContent(x, 10, g.Ball.Rune, nil, style)
-		g.Screen.Show()
-		x++ // move ball right
+		g.Ball.UpdatePosition()
+		g.Screen.SetContent(g.Ball.X, g.Ball.Y, g.Ball.Rune, nil, style)
 		time.Sleep(40 * time.Millisecond)
+		g.Screen.Show()
 	}
 }
 
