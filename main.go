@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -16,7 +17,7 @@ func main() {
 		log.Fatalf("screen init: %+v", err)
 	}
 
-	style := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorBlack)
+	style := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
 	screen.SetStyle(style)
 
 	for {
@@ -26,5 +27,15 @@ func main() {
 		screen.SetContent(3, 0, 'l', nil, style)
 		screen.SetContent(4, 0, 'o', nil, style)
 		screen.Show()
+		switch event := screen.PollEvent().(type) {
+		case *tcell.EventResize:
+			screen.Sync()
+		case *tcell.EventKey:
+			if event.Key() == tcell.KeyCtrlC {
+				screen.Fini()
+				os.Exit(0)
+			}
+		}
 	}
+
 }
