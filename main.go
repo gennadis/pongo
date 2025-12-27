@@ -9,13 +9,29 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-type Game struct {
-	Screen tcell.Screen
+type Ball struct {
+	Rune rune
+	X    int
+	Y    int
 }
 
-func NewGame(scr tcell.Screen) *Game {
+func NewBall() *Ball {
+	return &Ball{
+		Rune: '🟢',
+		X:    1,
+		Y:    1,
+	}
+}
+
+type Game struct {
+	Screen tcell.Screen
+	Ball   Ball
+}
+
+func NewGame(scr tcell.Screen, b Ball) *Game {
 	return &Game{
 		Screen: scr,
+		Ball:   b,
 	}
 }
 
@@ -26,13 +42,9 @@ func (g *Game) Run() {
 	x := 0
 	for {
 		g.Screen.Clear()
-		g.Screen.SetContent(x, 10, 'h', nil, style)
-		g.Screen.SetContent(x+1, 10, 'e', nil, style)
-		g.Screen.SetContent(x+2, 10, 'l', nil, style)
-		g.Screen.SetContent(x+3, 10, 'l', nil, style)
-		g.Screen.SetContent(x+4, 10, 'o', nil, style)
+		g.Screen.SetContent(x, 10, g.Ball.Rune, nil, style)
 		g.Screen.Show()
-		x++ // move text right
+		x++ // move ball right
 		time.Sleep(40 * time.Millisecond)
 	}
 }
@@ -47,7 +59,8 @@ func main() {
 		log.Fatalf("screen init: %+v", err)
 	}
 
-	game := NewGame(scr)
+	ball := NewBall()
+	game := NewGame(scr, *ball)
 	go game.Run()
 
 	wg := sync.WaitGroup{}
