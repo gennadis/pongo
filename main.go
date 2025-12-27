@@ -3,16 +3,20 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
 
-const ballEmoji = '🟢'
+const (
+	ballEmoji  = "🟢"
+	paddleSize = 8
+)
 
 type Ball struct {
-	Rune  rune
+	Emoji string
 	X     int
 	Y     int
 	XVelo int
@@ -21,7 +25,7 @@ type Ball struct {
 
 func NewBall() *Ball {
 	return &Ball{
-		Rune:  ballEmoji,
+		Emoji: ballEmoji,
 		X:     1,
 		Y:     1,
 		XVelo: 1,
@@ -44,26 +48,71 @@ func (b *Ball) Bounce(maxWidth int, maxHeight int) {
 	}
 }
 
-type Game struct {
-	Screen tcell.Screen
-	Ball   Ball
+type Paddle struct {
+	width  int
+	height int
+	X      int
+	Y      int
+	YVelo  int
+	String string
 }
 
-func NewGame(scr tcell.Screen, b Ball) *Game {
+func NewPaddle(x int, y int) *Paddle {
+	return &Paddle{
+		width:  1,
+		height: paddleSize,
+		X:      x,
+		Y:      y,
+		YVelo:  3,
+		String: strings.Repeat("-", paddleSize),
+	}
+}
+
+type Game struct {
+	Screen  tcell.Screen
+	Ball    *Ball
+	Paddle1 *Paddle
+	Paddle2 *Paddle
+}
+
+func NewGame(scr tcell.Screen, b *Ball, p1 *Paddle, p2 *Paddle) *Game {
 	return &Game{
-		Screen: scr,
-		Ball:   b,
+		Screen:  scr,
+		Ball:    b,
+		Paddle1: p1,
+		Paddle2: p2,
 	}
 }
 
 func (g *Game) Run() {
-	style := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
-	g.Screen.SetStyle(style)
+	screenStyle := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
+	paddleStyle := tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorWhite)
+	g.Screen.SetStyle(screenStyle)
 
 	for {
 		g.Screen.Clear()
 		g.Ball.UpdatePosition()
-		g.Screen.SetContent(g.Ball.X, g.Ball.Y, g.Ball.Rune, nil, style)
+
+		drawSprite(
+			g.Screen,
+			g.Ball.X, g.Ball.Y,
+			g.Ball.X, g.Ball.Y,
+			screenStyle, g.Ball.Emoji,
+		)
+
+		drawSprite(
+			g.Screen,
+			g.Paddle1.X, g.Paddle1.Y,
+			g.Paddle1.X+g.Paddle1.width, g.Paddle1.Y+g.Paddle1.height,
+			paddleStyle, g.Paddle1.String,
+		)
+
+		drawSprite(
+			g.Screen,
+			g.Paddle2.X, g.Paddle2.Y,
+			g.Paddle2.X+g.Paddle2.width, g.Paddle2.Y+g.Paddle2.height,
+			paddleStyle, g.Paddle2.String,
+		)
 
 		maxWidth, maxHeight := g.Screen.Size()
 		g.Ball.Bounce(maxWidth, maxHeight)
@@ -84,7 +133,12 @@ func main() {
 	}
 
 	ball := NewBall()
-	game := NewGame(scr, *ball)
+
+	width, height := scr.Size()
+	p1 := NewPaddle(2, height/2-3)
+	p2 := NewPaddle(width-3, height/2-3)
+
+	game := NewGame(scr, ball, p1, p2)
 	go game.Run()
 
 	wg := sync.WaitGroup{}
@@ -104,6 +158,23 @@ func handleKeyPress(wg *sync.WaitGroup, screen tcell.Screen) {
 				screen.Fini()
 				os.Exit(0)
 			}
+		}
+	}
+}
+
+func drawSprite(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
+	row := y1
+	col := x1
+
+	for _, r := range []rune(text) {
+		s.SetContent(col, row, r, nil, style)
+		col++
+		if col >= x2 {
+			row++
+			col = x1
+		}
+		if row > y2 {
+			break
 		}
 	}
 }
