@@ -12,7 +12,8 @@ import (
 
 const (
 	ballEmoji  = "🟢"
-	paddleSize = 8
+	paddleSize = 12
+	gameSpeed  = 60
 )
 
 type Ball struct {
@@ -38,13 +39,35 @@ func (b *Ball) UpdatePosition() {
 	b.Y += b.YVelo
 }
 
-func (b *Ball) Bounce(maxWidth int, maxHeight int) {
+func (b *Ball) BounceWall(maxWidth int, maxHeight int) {
 	if b.X <= 0 || b.X >= maxWidth {
 		b.XVelo *= -1
 	}
 
 	if b.Y <= 0 || b.Y >= maxHeight {
 		b.YVelo *= -1
+	}
+}
+
+func (b *Ball) hasTouched(p Paddle) bool {
+	return b.X >= p.X && b.X <= p.X+p.width && b.Y >= p.Y && b.Y <= p.Y+p.height
+}
+
+func (b *Ball) reverseX() {
+	b.XVelo *= -1
+}
+
+func (b *Ball) reverseY() {
+	b.YVelo *= -1
+}
+
+func (b *Ball) BouncePaddle(maxWidth int, maxHeight int) {
+	if b.X <= 0 || b.X >= maxWidth {
+		b.reverseX()
+	}
+
+	if b.Y <= 0 || b.Y >= maxHeight {
+		b.reverseY()
 	}
 }
 
@@ -126,9 +149,14 @@ func (g *Game) Run() {
 			paddleStyle, g.Paddle2.String,
 		)
 
+		if g.Ball.hasTouched(*g.Paddle1) || g.Ball.hasTouched(*g.Paddle2) {
+			g.Ball.reverseX()
+			g.Ball.reverseY()
+		}
+
 		maxWidth, maxHeight := g.Screen.Size()
-		g.Ball.Bounce(maxWidth, maxHeight)
-		time.Sleep(40 * time.Millisecond)
+		g.Ball.BounceWall(maxWidth, maxHeight)
+		time.Sleep(gameSpeed * time.Millisecond)
 		g.Screen.Show()
 	}
 }
