@@ -9,40 +9,51 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+type Game struct {
+	Screen tcell.Screen
+}
+
+func NewGame(scr tcell.Screen) *Game {
+	return &Game{
+		Screen: scr,
+	}
+}
+
+func (g *Game) Run() {
+	style := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
+	g.Screen.SetStyle(style)
+
+	x := 0
+	for {
+		g.Screen.Clear()
+		g.Screen.SetContent(x, 10, 'h', nil, style)
+		g.Screen.SetContent(x+1, 10, 'e', nil, style)
+		g.Screen.SetContent(x+2, 10, 'l', nil, style)
+		g.Screen.SetContent(x+3, 10, 'l', nil, style)
+		g.Screen.SetContent(x+4, 10, 'o', nil, style)
+		g.Screen.Show()
+		x++ // move text right
+		time.Sleep(40 * time.Millisecond)
+	}
+}
+
 func main() {
-	screen, err := tcell.NewScreen()
+	scr, err := tcell.NewScreen()
 	if err != nil {
 		log.Fatalf("new screen: %+v", err)
 	}
 
-	if err := screen.Init(); err != nil {
+	if err := scr.Init(); err != nil {
 		log.Fatalf("screen init: %+v", err)
 	}
 
-	style := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
-	screen.SetStyle(style)
+	game := NewGame(scr)
+	go game.Run()
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go runGameLoop(&wg, screen, style)
-	go handleKeyPress(&wg, screen)
+	wg.Add(1)
+	go handleKeyPress(&wg, scr)
 	wg.Wait()
-}
-
-func runGameLoop(wg *sync.WaitGroup, screen tcell.Screen, style tcell.Style) {
-	defer wg.Done()
-	x := 0
-	for {
-		screen.Clear()
-		screen.SetContent(x, 10, 'h', nil, style)
-		screen.SetContent(x+1, 10, 'e', nil, style)
-		screen.SetContent(x+2, 10, 'l', nil, style)
-		screen.SetContent(x+3, 10, 'l', nil, style)
-		screen.SetContent(x+4, 10, 'o', nil, style)
-		screen.Show()
-		x++ // move text right
-		time.Sleep(40 * time.Millisecond)
-	}
 }
 
 func handleKeyPress(wg *sync.WaitGroup, screen tcell.Screen) {
