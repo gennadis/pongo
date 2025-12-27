@@ -68,6 +68,18 @@ func NewPaddle(x int, y int) *Paddle {
 	}
 }
 
+func (p *Paddle) MoveUp() {
+	if p.Y > 0 {
+		p.Y -= p.YVelo
+	}
+}
+
+func (p *Paddle) MoveDown(maxHeight int) {
+	if p.Y < maxHeight-p.height {
+		p.Y += p.YVelo
+	}
+}
+
 type Game struct {
 	Screen  tcell.Screen
 	Ball    *Ball
@@ -92,21 +104,21 @@ func (g *Game) Run() {
 	for {
 		g.Screen.Clear()
 		g.Ball.UpdatePosition()
-
+		// ball
 		drawSprite(
 			g.Screen,
 			g.Ball.X, g.Ball.Y,
 			g.Ball.X, g.Ball.Y,
 			screenStyle, g.Ball.Emoji,
 		)
-
+		// player one
 		drawSprite(
 			g.Screen,
 			g.Paddle1.X, g.Paddle1.Y,
 			g.Paddle1.X+g.Paddle1.width, g.Paddle1.Y+g.Paddle1.height,
 			paddleStyle, g.Paddle1.String,
 		)
-
+		// player two
 		drawSprite(
 			g.Screen,
 			g.Paddle2.X, g.Paddle2.Y,
@@ -116,9 +128,35 @@ func (g *Game) Run() {
 
 		maxWidth, maxHeight := g.Screen.Size()
 		g.Ball.Bounce(maxWidth, maxHeight)
-
 		time.Sleep(40 * time.Millisecond)
 		g.Screen.Show()
+	}
+}
+
+func (g *Game) handleKeyPress(wg *sync.WaitGroup, maxHeight int) {
+	defer wg.Done()
+	for {
+		switch event := g.Screen.PollEvent().(type) {
+		case *tcell.EventKey:
+			switch {
+			// player one
+			case event.Rune() == 'w':
+				g.Paddle1.MoveUp()
+			case event.Rune() == 's':
+				g.Paddle1.MoveDown(maxHeight)
+			// player two
+			case event.Key() == tcell.KeyUp:
+				g.Paddle2.MoveUp()
+			case event.Key() == tcell.KeyDown:
+				g.Paddle2.MoveDown(maxHeight)
+			// quit
+			case event.Key() == tcell.KeyCtrlC:
+				g.Screen.Fini()
+				os.Exit(0)
+			}
+		case *tcell.EventResize:
+			g.Screen.Sync()
+		}
 	}
 }
 
@@ -143,23 +181,8 @@ func main() {
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	go handleKeyPress(&wg, scr)
+	go game.handleKeyPress(&wg, height)
 	wg.Wait()
-}
-
-func handleKeyPress(wg *sync.WaitGroup, screen tcell.Screen) {
-	defer wg.Done()
-	for {
-		switch event := screen.PollEvent().(type) {
-		case *tcell.EventResize:
-			screen.Sync()
-		case *tcell.EventKey:
-			if event.Key() == tcell.KeyCtrlC {
-				screen.Fini()
-				os.Exit(0)
-			}
-		}
-	}
 }
 
 func drawSprite(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
