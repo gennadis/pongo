@@ -28,13 +28,14 @@ func (b *Ball) UpdatePosition() {
 	b.Y += b.YVelo
 }
 
-// BounceWall handles wall collision detection and reverses velocity when hitting walls.
+// BounceWall handles wall collision detection and reverses velocity when hitting top/bottom walls.
 func (b *Ball) BounceWall(maxWidth int, maxHeight int) {
 	if b.Y <= 0 || b.Y >= maxHeight {
 		b.YVelo *= -1
 	}
 }
 
+// Reset resets the ball to the given position and velocity.
 func (b *Ball) Reset(x int, y int, xVelo int, yVelo int) {
 	b.X = x
 	b.Y = y

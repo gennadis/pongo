@@ -11,14 +11,15 @@ import (
 
 // Game holds the game state including screen, entities, and synchronization primitives.
 type Game struct {
-	mu      sync.RWMutex
-	ctx     context.Context
-	cancel  context.CancelFunc
-	config  *Config
-	Screen  tcell.Screen
-	Ball    *Ball
-	Player1 *Player
-	Player2 *Player
+	mu       sync.RWMutex
+	ctx      context.Context
+	cancel   context.CancelFunc
+	config   *Config
+	Screen   tcell.Screen
+	Ball     *Ball
+	Player1  *Player
+	Player2  *Player
+	gameOver bool
 }
 
 // NewGame creates a new Game with the given context, screen, entities, and configuration.
@@ -51,9 +52,11 @@ func (g *Game) Run() {
 		case <-ticker.C:
 			g.mu.Lock()
 			g.Screen.Clear()
-			g.Ball.UpdatePosition()
 
 			maxWidth, maxHeight := g.Screen.Size()
+			if !g.gameOver {
+				g.Ball.UpdatePosition()
+			}
 
 			// ball
 			drawSprite(
@@ -89,23 +92,29 @@ func (g *Game) Run() {
 				screenStyle, strconv.Itoa(g.Player2.Score),
 			)
 
-			if g.Ball.HasTouched(*g.Player1.Paddle) || g.Ball.HasTouched(*g.Player2.Paddle) {
-				g.Ball.ReverseX()
+			if !g.gameOver {
+				if g.Ball.HasTouched(*g.Player1.Paddle) || g.Ball.HasTouched(*g.Player2.Paddle) {
+					g.Ball.ReverseX()
+				}
+
+				g.Ball.BounceWall(maxWidth, maxHeight)
+
+				if g.Ball.X <= 0 {
+					g.Player2.Score++
+					g.Ball.Reset(maxWidth/2, maxHeight/2, -1, 1)
+				}
+
+				if g.Ball.X >= maxWidth {
+					g.Player1.Score++
+					g.Ball.Reset(maxWidth/2, maxHeight/2, 1, 1)
+				}
+
+				if g.GameOver() {
+					g.gameOver = true
+				}
 			}
 
-			g.Ball.BounceWall(maxWidth, maxHeight)
-
-			if g.Ball.X <= 0 {
-				g.Player2.Score++
-				g.Ball.Reset(maxWidth/2, maxHeight/2, -1, 1)
-			}
-
-			if g.Ball.X >= maxWidth {
-				g.Player1.Score++
-				g.Ball.Reset(maxWidth/2, maxHeight/2, 1, 1)
-			}
-
-			if g.GameOver() {
+			if g.gameOver {
 				drawSprite(g.Screen,
 					(maxWidth/2)-4, 7,
 					(maxWidth/2)+5, 7,
@@ -114,10 +123,9 @@ func (g *Game) Run() {
 
 				drawSprite(g.Screen,
 					(maxWidth/2)-8, 11,
-					(maxWidth/2)+5, 7,
+					(maxWidth/2)+5, 11,
 					screenStyle, g.DeclareWinner()+" Wins!",
 				)
-				g.Screen.Show()
 			}
 
 			g.Screen.Show()
@@ -164,10 +172,12 @@ func (g *Game) HandleKeyPress() {
 	}
 }
 
+// GameOver returns true if either player has reached the winning score.
 func (g *Game) GameOver() bool {
 	return g.Player1.Score == 3 || g.Player2.Score == 3
 }
 
+// DeclareWinner returns the name of the winning player.
 func (g *Game) DeclareWinner() string {
 	if !g.GameOver() {
 		return "No winner"
@@ -175,9 +185,8 @@ func (g *Game) DeclareWinner() string {
 
 	if g.Player1.Score > g.Player2.Score {
 		return "Player 1"
-	} else {
-		return "Player 2"
 	}
+	return "Player 2"
 }
 
 func drawSprite(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
