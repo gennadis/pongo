@@ -105,6 +105,21 @@ func (g *Game) Run() {
 				g.Ball.Reset(maxWidth/2, maxHeight/2, 1, 1)
 			}
 
+			if g.GameOver() {
+				drawSprite(g.Screen,
+					(maxWidth/2)-4, 7,
+					(maxWidth/2)+5, 7,
+					screenStyle, "Game Over",
+				)
+
+				drawSprite(g.Screen,
+					(maxWidth/2)-8, 11,
+					(maxWidth/2)+5, 7,
+					screenStyle, g.DeclareWinner()+" Wins!",
+				)
+				g.Screen.Show()
+			}
+
 			g.Screen.Show()
 			g.mu.Unlock()
 		}
@@ -146,6 +161,22 @@ func (g *Game) HandleKeyPress() {
 				g.Screen.Sync()
 			}
 		}
+	}
+}
+
+func (g *Game) GameOver() bool {
+	return g.Player1.Score == 3 || g.Player2.Score == 3
+}
+
+func (g *Game) DeclareWinner() string {
+	if !g.GameOver() {
+		return "No winner"
+	}
+
+	if g.Player1.Score > g.Player2.Score {
+		return "Player 1"
+	} else {
+		return "Player 2"
 	}
 }
 
