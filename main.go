@@ -27,8 +27,8 @@ func main() {
 
 	width, height := screen.Size()
 	ball := NewBall()
-	paddle1 := NewPaddle(0, height/2-3, config)
-	paddle2 := NewPaddle(width-1, height/2-3, config)
+	paddle1 := NewPaddle(2, height/2-3, config)
+	paddle2 := NewPaddle(width-3, height/2-3, config)
 	player1 := NewPlayer(paddle1)
 	player2 := NewPlayer(paddle2)
 	game := NewGame(ctx, cancel, config, screen, ball, player1, player2)
