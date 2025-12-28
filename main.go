@@ -29,7 +29,9 @@ func main() {
 	ball := NewBall()
 	paddle1 := NewPaddle(0, height/2-3, config)
 	paddle2 := NewPaddle(width-1, height/2-3, config)
-	game := NewGame(ctx, cancel, config, screen, ball, paddle1, paddle2)
+	player1 := NewPlayer(paddle1)
+	player2 := NewPlayer(paddle2)
+	game := NewGame(ctx, cancel, config, screen, ball, player1, player2)
 
 	go game.Run()
 	go game.HandleKeyPress()

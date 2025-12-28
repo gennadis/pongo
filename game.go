@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,20 +17,20 @@ type Game struct {
 	config  *Config
 	Screen  tcell.Screen
 	Ball    *Ball
-	Paddle1 *Paddle
-	Paddle2 *Paddle
+	Player1 *Player
+	Player2 *Player
 }
 
 // NewGame creates a new Game with the given context, screen, entities, and configuration.
-func NewGame(ctx context.Context, cancel context.CancelFunc, cfg *Config, scr tcell.Screen, b *Ball, p1 *Paddle, p2 *Paddle) *Game {
+func NewGame(ctx context.Context, cancel context.CancelFunc, cfg *Config, scr tcell.Screen, b *Ball, p1 *Player, p2 *Player) *Game {
 	return &Game{
 		ctx:     ctx,
 		cancel:  cancel,
 		config:  cfg,
 		Screen:  scr,
 		Ball:    b,
-		Paddle1: p1,
-		Paddle2: p2,
+		Player1: p1,
+		Player2: p2,
 	}
 }
 
@@ -52,6 +53,8 @@ func (g *Game) Run() {
 			g.Screen.Clear()
 			g.Ball.UpdatePosition()
 
+			maxWidth, maxHeight := g.Screen.Size()
+
 			// ball
 			drawSprite(
 				g.Screen,
@@ -59,33 +62,46 @@ func (g *Game) Run() {
 				g.Ball.X, g.Ball.Y,
 				screenStyle, g.Ball.Emoji,
 			)
-			// player one
+			// player one paddle
 			drawSprite(
 				g.Screen,
-				g.Paddle1.X, g.Paddle1.Y,
-				g.Paddle1.X+g.Paddle1.width, g.Paddle1.Y+g.Paddle1.height,
-				paddleStyle, g.Paddle1.String,
+				g.Player1.Paddle.X, g.Player1.Paddle.Y,
+				g.Player1.Paddle.X+g.Player1.Paddle.width, g.Player1.Paddle.Y+g.Player1.Paddle.height,
+				paddleStyle, g.Player1.Paddle.String,
 			)
-			// player two
+			// player one scrore
+			drawSprite(g.Screen,
+				(maxWidth/2)-5, 1,
+				1, 1,
+				screenStyle, strconv.Itoa(g.Player1.Score),
+			)
+			// player two paddle
 			drawSprite(
 				g.Screen,
-				g.Paddle2.X, g.Paddle2.Y,
-				g.Paddle2.X+g.Paddle2.width, g.Paddle2.Y+g.Paddle2.height,
-				paddleStyle, g.Paddle2.String,
+				g.Player2.Paddle.X, g.Player2.Paddle.Y,
+				g.Player2.Paddle.X+g.Player2.Paddle.width, g.Player2.Paddle.Y+g.Player2.Paddle.height,
+				paddleStyle, g.Player2.Paddle.String,
+			)
+			// player two score
+			drawSprite(g.Screen,
+				(maxWidth/2)+5, 1,
+				1, 1,
+				screenStyle, strconv.Itoa(g.Player2.Score),
 			)
 
-			if g.Ball.HasTouched(*g.Paddle1) || g.Ball.HasTouched(*g.Paddle2) {
+			if g.Ball.HasTouched(*g.Player1.Paddle) || g.Ball.HasTouched(*g.Player2.Paddle) {
 				g.Ball.ReverseX()
 			}
 
-			maxWidth, maxHeight := g.Screen.Size()
 			g.Ball.BounceWall(maxWidth, maxHeight)
 
 			if g.Ball.X <= 0 {
+				g.Player2.Score++
 				g.Ball.Reset(maxWidth/2, maxHeight/2, -1, 1)
 			}
 
 			if g.Ball.X >= maxWidth {
+				g.Player1.Score++
 				g.Ball.Reset(maxWidth/2, maxHeight/2, 1, 1)
 			}
 
@@ -111,14 +127,14 @@ func (g *Game) HandleKeyPress() {
 				switch {
 				// player one
 				case ev.Rune() == 'w':
-					g.Paddle1.MoveUp()
+					g.Player1.Paddle.MoveUp()
 				case ev.Rune() == 's':
-					g.Paddle1.MoveDown(maxHeight)
+					g.Player1.Paddle.MoveDown(maxHeight)
 				// player two
 				case ev.Key() == tcell.KeyUp:
-					g.Paddle2.MoveUp()
+					g.Player2.Paddle.MoveUp()
 				case ev.Key() == tcell.KeyDown:
-					g.Paddle2.MoveDown(maxHeight)
+					g.Player2.Paddle.MoveDown(maxHeight)
 				// quit
 				case ev.Key() == tcell.KeyCtrlC:
 					g.mu.Unlock()
