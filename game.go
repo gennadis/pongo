@@ -81,6 +81,14 @@ func (g *Game) Run() {
 			maxWidth, maxHeight := g.Screen.Size()
 			g.Ball.BounceWall(maxWidth, maxHeight)
 
+			if g.Ball.X <= 0 {
+				g.Ball.Reset(maxWidth/2, maxHeight/2, -1, 1)
+			}
+
+			if g.Ball.X >= maxWidth {
+				g.Ball.Reset(maxWidth/2, maxHeight/2, 1, 1)
+			}
+
 			g.Screen.Show()
 			g.mu.Unlock()
 		}

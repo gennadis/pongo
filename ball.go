@@ -30,13 +30,16 @@ func (b *Ball) UpdatePosition() {
 
 // BounceWall handles wall collision detection and reverses velocity when hitting walls.
 func (b *Ball) BounceWall(maxWidth int, maxHeight int) {
-	if b.X <= 0 || b.X >= maxWidth {
-		b.XVelo *= -1
-	}
-
 	if b.Y <= 0 || b.Y >= maxHeight {
 		b.YVelo *= -1
 	}
+}
+
+func (b *Ball) Reset(x int, y int, xVelo int, yVelo int) {
+	b.X = x
+	b.Y = y
+	b.XVelo = xVelo
+	b.YVelo = yVelo
 }
 
 // HasTouched checks if the ball has collided with the given paddle.
